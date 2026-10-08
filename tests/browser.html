@@ -1,4 +1,4 @@
-<!doctype html><html lang="sv"><meta charset="utf-8"><title>Molly – browserkontroll</title><style>body{font:14px system-ui;background:#f4f0f7;color:#432d50;margin:20px}iframe{width:1024px;height:768px;border:1px solid #cdbfda}li{margin:6px}.pass{color:#326d43}.fail{color:#a21b35}</style><h1>Funktionell browserkontroll</h1><p>Deterministisk simulation med riktiga DOM-händelsehanterare. Flera pekningar emuleras; fysisk surfplatta ingår inte.</p><ol id="results"></ol><iframe src="../index.html?test=1" title="Testspel i surfplattestorlek"></iframe><script>
+<!doctype html><html lang="sv"><meta charset="utf-8"><title>Molly – browserkontroll</title><style>body{font:14px system-ui;background:#f4f0f7;color:#432d50;margin:20px}iframe{width:1024px;height:768px;border:1px solid #cdbfda}li{margin:6px}.pass{color:#326d43}.fail{color:#a21b35}</style><h1>Funktionell browserkontroll</h1><p>Deterministisk simulation med riktiga DOM-händelsehanterare. Flera pekningar emuleras; fysisk surfplatta ingår inte.</p><ol id="results"></ol><iframe src="../index.html?test=1&amp;v=1.0.1" title="Testspel i surfplattestorlek"></iframe><script>
 const iframe=document.querySelector('iframe'),results=document.querySelector('#results');
 const assert=(v,m)=>{if(!v)throw Error(m)};
 iframe.addEventListener('load',async()=>{
@@ -19,3 +19,4 @@ test('Liggande surfplatta: knappar under canvas, inga scrollområden',()=>{const
 test('Snabba hopp- och magitryck mellan två fysiksteg tappas inte',()=>{t.start();t.step(40);key('Space');key('Space','keyup');t.step();assert(t.game.p.vy<0,'Kort tangenttryck');t.start();t.step(40);pointer('magic',31,'pointerdown');pointer('magic',31,'pointerup');t.step();assert(t.game.shots.length===1,'Kort pektryck');assert(!t.input().magic,'Pektryck fastnar inte');t.start();t.step(40);pointer('jump',32,'pointerdown');pointer('jump',32,'pointercancel');t.step();assert(t.game.p.grounded,'Avbrutet tryck ska rensas');});
 document.title=results.querySelector('.fail')?'Molly – TESTFEL':'Molly – ALLA BROWSERTESTER GODKÄNDA';
 });</script></html>
+
