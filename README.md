@@ -17,7 +17,8 @@ npm start
 
 | Handling | Tangentbord | Pekskärm |
 |---|---|---|
-| Rörelse | ← / → | Vänster / höger |
+| Rörelse | ← / → | Tryck på spelytan dit ni vill gå |
+| Stanna | Släpp ← / → | Stanna, eller invänta destinationen |
 | Hopp | Mellanslag | Hoppa |
 | Kort flygning | Håll mellanslag | Håll Hoppa |
 | Stjärnmagi | X | Magi |
@@ -26,7 +27,9 @@ npm start
 
 Flygkraften räcker ungefär 1,3 sekunder och fylls på vid landning. Magin söker efter törnen framför er och återhämtar sig på 0,65 sekunder. Tre hjärtan ger utrymme att prova igen. Vid skada återvänder ni till en tidigare trygg plats. Alla stjärnor är valfria; målet är regnbågsportalen.
 
-Pekknapparna stödjer flera samtidiga pekningar med oberoende släpp och avbrott. Vid förlorat fokus pausas spelet och inmatningen rensas. A/D används inte.
+Spelet känner av pekskärm via pekdonets egenskaper (`any-pointer: coarse`, med `maxTouchPoints` och `hover: none` som reserv). En faktisk pekning eller penna aktiverar också pekläget. Det fungerar även på surfplatta med ansluten mus; ett smalt datorfönster växlar inte automatiskt till pekläge.
+
+I pekläge ersätts pilknapparna med tryck på spelytan och Stanna. Molly går tills hon når den markerade platsen. Dra fingret för att ändra destinationen. Hoppa och Magi har större knappar och stödjer flera samtidiga pekningar med oberoende släpp och avbrott. Vid skada, paus, omstart och förlorat fokus rensas destinationen. Vid förlorat fokus pausas också spelet. A/D används inte.
 
 ## GitHub Pages
 
@@ -40,17 +43,18 @@ Publicera från **Settings → Pages → Deploy from a branch → main → /(roo
 npm test
 ```
 
-Åtta automatiserade simulationstester kontrollerar kollisioner, förbrukad flygkraft och påfyllning, magi, stjärnor, hälsa, förlust, paus och hela banan från start till mål utan att flytta spelaren med testkod.
+Elva automatiserade tester kontrollerar pekskärmsdetektering, kollisioner, förbrukad flygkraft och påfyllning, magi, stjärnor, hälsa, förlust, paus och hela banan från start till mål utan att flytta spelaren med testkod.
 
-Med servern igång: öppna **http://localhost:4173/tests/browser.html**. Elva browsertester kontrollerar start, tangentbordshändelser, X, hopp/flygning, tre samtidiga emulerade pekningar, oberoende släpp, avbruten pekning, förlorad pointer capture, fokusförlust, paus, omstart, förlust, stjärnor och fullständigt genomspel. Liggande layout kontrolleras i en 1024 × 768-iframe: pekknappar ligger under canvas, träffytor är minst 44 px, och sidan har inget scrollområde.
+Med servern igång: öppna **http://localhost:4173/tests/browser.html**. Arton browsertester kontrollerar start, tangentbordshändelser, X, hopp/flygning, tre samtidiga emulerade pekningar, oberoende släpp, avbruten pekning, förlorad pointer capture, fokusförlust, paus, omstart, förlust, stjärnor och fullständigt genomspel. De kontrollerar även tryck för att gå, automatisk stopp vid destinationen, drag, Stanna, kamerans koordinater och stopp vid skada. Layout kontrolleras i 768 × 1024, 834 × 1194, 1024 × 600, 1024 × 768 och 1366 × 1024: pekknappar ligger under canvas, träffytor är minst 44 px, och sidan har inget scrollområde.
 
-Verifierat i Codex-webbläsarens Chromium den 8 oktober 2026: 8/8 simulationstester och 11/11 browsertester godkända. Ett automatiserat genomspel nådde portalen med tre hjärtan och 12/15 stjärnor. Vanliga browserinteraktioner med höger piltangent, mellanslag och X verifierade rörelse, hopp och magi. Samtidig touch är emulerad med PointerEvent; fysisk iPad/Android-surfplatta och Safari har inte testats.
+Verifierat i Codex-webbläsarens Chromium den 8 oktober 2026: 11/11 automatiserade tester och 18/18 browsertester godkända. Ett automatiserat genomspel nådde portalen med tre hjärtan och minst fem stjärnor. Vanliga browserinteraktioner med höger piltangent, mellanslag och X verifierade rörelse, hopp och magi. Samtidig touch är emulerad med PointerEvent; fysisk iPad/Android-surfplatta och Safari har inte testats.
 
 ## Teknik och vidareutveckling
 
 Ren JavaScript och Canvas, 120 fysiksteg per sekund, separat rendering och en liten statisk utvecklingsserver. Spelet fungerar utan AI-anrop, konton eller spelserver. Allt spelinnehåll laddas från lokala filer. Koden innehåller inga analysverktyg eller externa nätverksberoenden under spelandet.
 
 - `core.js`: fysik, bana och spelregler; går att testa i Node.
+- `control-mode.js`: detektering av pekskärmskontroller; går att testa i Node.
 - `game.js`: bildrendering, animationer, UI och inmatning.
 - `style.css` och `index.html`: responsiv svensk spelvy.
 - `assets/`: referens, separata originalbilder och mindre WebP-versioner.

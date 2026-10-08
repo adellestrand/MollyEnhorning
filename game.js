@@ -2,21 +2,46 @@
 const C=MollyCore, canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
 let game=C.createGame(),last=0,accumulator=0,lastMode='',ready=false;
+let touchMode=false,moveTarget=null,screenPointer=null,blockedTime=0;
+const coarsePointer=matchMedia('(any-pointer: coarse)'),hoverNone=matchMedia('(hover: none)');
+function setTouchMode(enabled){
+  if(touchMode!==enabled){screenPointer=null;stopWalking();}
+  touchMode=enabled;document.body.dataset.controls=enabled?'touch':'keyboard';
+  $('touch-instructions').hidden=!enabled;$('keyboard-instructions').hidden=enabled;
+  $('screen-controls').hidden=!enabled;
+  canvas.setAttribute('aria-label',enabled?'Spelyta. Tryck dit ni vill gå. Använd knapparna Hoppa och Magi.':'Spelyta. Piltangenter styr, mellanslag hoppar och flyger, X använder magi.');
+  $('tip').innerHTML=enabled?'Tryck dit ni vill gå<span>Hoppa och använd magi med knapparna</span>':'Följ stjärnorna till regnbågsportalen<span>Håll hopp för en liten flygtur</span>';
+}
+function detectControls(){setTouchMode(MollyControls.usesTouchControls({coarsePointer:coarsePointer.matches,touchPoints:navigator.maxTouchPoints,hoverNone:hoverNone.matches}));}
+detectControls();coarsePointer.addEventListener('change',detectControls);hoverNone.addEventListener('change',detectControls);
+document.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.pointerType==='pen')setTouchMode(true);},true);
 const held=new Set(),pointers=new Map(),queued=new Set(),actionKeys={ArrowLeft:'left',ArrowRight:'right',Space:'jump',KeyX:'magic'};
-const input=()=>({left:held.has('left')||[...pointers.values()].includes('left'),right:held.has('right')||[...pointers.values()].includes('right'),jump:queued.has('jump')||held.has('jump')||[...pointers.values()].includes('jump'),magic:queued.has('magic')||held.has('magic')||[...pointers.values()].includes('magic')});
-function simulate(){C.step(game,input(),1/120);queued.clear();}
-function clearInput(){held.clear();pointers.clear();queued.clear();document.querySelectorAll('[data-action]').forEach(b=>b.classList.remove('active'));game.jumpWas=false;game.magicWas=false;}
+const input=()=>({left:moveTarget!==null&&moveTarget<game.p.x||held.has('left')||[...pointers.values()].includes('left'),right:moveTarget!==null&&moveTarget>game.p.x||held.has('right')||[...pointers.values()].includes('right'),jump:queued.has('jump')||held.has('jump')||[...pointers.values()].includes('jump'),magic:queued.has('magic')||held.has('magic')||[...pointers.values()].includes('magic')});
+function stopWalking(){moveTarget=null;blockedTime=0;$('stop').disabled=true;}
+function simulate(){
+  if(moveTarget!==null&&Math.abs(moveTarget-game.p.x)<=C.SPEED/120)stopWalking();
+  const oldX=game.p.x,health=game.p.health;C.step(game,input(),1/120);queued.clear();
+  if(moveTarget!==null&&game.mode==='playing'){blockedTime=game.p.x===oldX?blockedTime+1/120:0;if(blockedTime>.35||game.p.health!==health)stopWalking();}
+}
+function clearInput(){held.clear();pointers.clear();queued.clear();screenPointer=null;stopWalking();document.querySelectorAll('[data-action]').forEach(b=>b.classList.remove('active'));game.jumpWas=false;game.magicWas=false;}
 function start(){clearInput();game=C.createGame();game.mode='playing';canvas.focus({preventScroll:true});sync();}
 function pause(){if(game.mode==='playing'){game.mode='paused';clearInput();}else if(game.mode==='paused'){game.mode='playing';canvas.focus({preventScroll:true});}sync();}
-document.addEventListener('keydown',e=>{const a=actionKeys[e.code];if(a){e.preventDefault();if(game.mode==='playing'){held.add(a);if(!e.repeat&&(a==='jump'||a==='magic'))queued.add(a);}}if(e.code==='Escape'&&!e.repeat)pause();});
+document.addEventListener('keydown',e=>{const a=actionKeys[e.code];if(a){e.preventDefault();if(game.mode==='playing'){if(a==='left'||a==='right')stopWalking();held.add(a);if(!e.repeat&&(a==='jump'||a==='magic'))queued.add(a);}}if(e.code==='Escape'&&!e.repeat)pause();});
 document.addEventListener('keyup',e=>{const a=actionKeys[e.code];if(a){e.preventDefault();held.delete(a);}});
 window.addEventListener('blur',()=>{clearInput();if(game.mode==='playing'){game.mode='paused';sync();}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInput();if(game.mode==='playing'){game.mode='paused';sync();}}});
 for(const b of document.querySelectorAll('[data-action]')){
-  b.addEventListener('pointerdown',e=>{e.preventDefault();if(game.mode!=='playing')return;const a=b.dataset.action;pointers.set(e.pointerId,a);if(a==='jump'||a==='magic')queued.add(a);b.classList.add('active');if(e.isTrusted)b.setPointerCapture(e.pointerId);});
+  b.addEventListener('pointerdown',e=>{e.preventDefault();if(game.mode!=='playing')return;const a=b.dataset.action;if(a==='left'||a==='right')stopWalking();pointers.set(e.pointerId,a);if(a==='jump'||a==='magic')queued.add(a);b.classList.add('active');if(e.isTrusted)b.setPointerCapture(e.pointerId);});
   const release=e=>{const wasActive=pointers.has(e.pointerId),a=b.dataset.action;pointers.delete(e.pointerId);if(![...pointers.values()].includes(a)){b.classList.remove('active');if((e.type==='pointercancel'||e.type==='lostpointercapture'&&wasActive)&&!held.has(a))queued.delete(a);}};
   b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',release);
 }
+function pointDestination(e){const r=canvas.getBoundingClientRect();moveTarget=Math.max(0,Math.min(C.W-game.p.w,(e.clientX-r.left)*1200/r.width+game.camera-game.p.w/2));blockedTime=0;$('stop').disabled=false;}
+canvas.addEventListener('pointerdown',e=>{if(!touchMode||game.mode!=='playing'||screenPointer!==null)return;e.preventDefault();screenPointer=e.pointerId;pointDestination(e);if(e.isTrusted)canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(e.pointerId===screenPointer){e.preventDefault();pointDestination(e);}});
+canvas.addEventListener('pointerup',e=>{if(e.pointerId===screenPointer)screenPointer=null;});
+const cancelScreen=e=>{if(e.pointerId===screenPointer){screenPointer=null;stopWalking();}};
+canvas.addEventListener('pointercancel',cancelScreen);canvas.addEventListener('lostpointercapture',cancelScreen);
+$('stop').addEventListener('click',()=>{screenPointer=null;stopWalking();});
 document.addEventListener('contextmenu',e=>{if(e.target.closest('.game-shell'))e.preventDefault();});
 $('play').addEventListener('click',()=>game.mode==='paused'?pause():start());$('restart').addEventListener('click',start);$('pause').addEventListener('click',pause);
 const sprite=new Image(),background=new Image();
@@ -40,7 +65,8 @@ function render(){
   ctx.save();ctx.translate(-game.camera,0);C.surfaces.forEach(platform);
   for(const s of game.stars){if(s.taken)continue;const y=s.y+Math.sin(game.time*2+s.x)*5;ctx.shadowBlur=18;ctx.shadowColor='#fff1ad';star(s.x,y,17,'#ffde79');ctx.shadowBlur=0;ctx.strokeStyle='#fff9db';ctx.lineWidth=2;ctx.stroke();}
   for(const t of game.thorns)if(!t.removed)thorn(t);
-  portal();if(game.camera<400){label(325,565,'← →  Av mot äventyret');label(605,460,'X  ·  Stjärnmagi');label(860,590,'Håll hopp för att flyga');}
+  portal();if(game.camera<400){label(325,565,touchMode?'Tryck dit ni vill gå':'← →  Av mot äventyret');label(605,460,touchMode?'Magi · Törnena försvinner':'X  ·  Stjärnmagi');label(860,590,'Håll hopp för att flyga');}
+  if(moveTarget!==null){const x=moveTarget+game.p.w/2;ctx.strokeStyle='#fff4bd';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,525,18,6,0,0,Math.PI*2);ctx.stroke();star(x,501,7,'#fff4bd');}
   for(const s of game.shots){ctx.shadowBlur=20;ctx.shadowColor='#d6a6ff';star(s.x,s.y,18,'#f5dcff');ctx.shadowBlur=0;for(let i=1;i<5;i++){ctx.globalAlpha=1-i/5;star(s.x-Math.sign(s.vx)*i*12,s.y,7-i,'#e5b7ff');}ctx.globalAlpha=1;}
   const p=game.p;
   if(sprite.complete&&sprite.naturalWidth){const air=!p.grounded,frame=(air?3:0)+(p.vx||air?Math.floor(game.time*(air?6:9))%3:0),sw=sprite.naturalWidth/3,sy=air?480:0,sh=air?544:480;ctx.save();ctx.translate(p.x+p.w/2,p.y+p.h);if(p.face<0)ctx.scale(-1,1);if(p.invulnerable>0)ctx.globalAlpha=.55+.25*Math.sin(game.time*22);ctx.drawImage(sprite,(frame%3)*sw,sy,sw,sh,-112,air?-238:-206,224,sh*224/sw);ctx.restore();}
@@ -54,7 +80,7 @@ function sync(){
   if(game.mode===lastMode)return;lastMode=game.mode;const overlay=$('overlay');overlay.hidden=game.mode==='playing';$('instructions').hidden=game.mode!=='intro';
   if(game.mode==='won'){clearInput();$('eyebrow').textContent='NI HITTADE HEM!';$('dialog-title').innerHTML='Vilken magisk resa!';$('dialog-text').textContent='Molly och enhörningen nådde regnbågsportalen. Ni samlade '+game.collected+' av '+game.stars.length+' stjärnor. Vill ni hitta fler?';$('play').textContent='Spela igen →';$('dialog-note').textContent='Varje äventyr börjar med ett litet hopp.';}
   if(game.mode==='lost'){clearInput();$('eyebrow').textContent='ÄVENTYRET VÄNTAR PÅ ER';$('dialog-title').textContent='Prova en gång till!';$('dialog-text').textContent='Hoppa över ravinerna och använd stjärnmagi på törnena. Ni klarar det!';$('play').textContent='Försök igen →';$('dialog-note').textContent='Tre nya hjärtan och full flygkraft.';}
-  if(game.mode==='paused'){$('eyebrow').textContent='EN LITEN VILOPAUS';$('dialog-title').textContent='Äventyret är pausat';$('dialog-text').textContent='Molly och enhörningen väntar här. Fortsätt när du är redo.';$('play').textContent='Fortsätt spela →';$('dialog-note').textContent='Tryck Esc eller på pausknappen för att fortsätta.';}
+  if(game.mode==='paused'){$('eyebrow').textContent='EN LITEN VILOPAUS';$('dialog-title').textContent='Äventyret är pausat';$('dialog-text').textContent='Molly och enhörningen väntar här. Fortsätt när du är redo.';$('play').textContent='Fortsätt spela →';$('dialog-note').textContent=touchMode?'Tryck Fortsätt spela när du är redo.':'Tryck Esc eller på pausknappen för att fortsätta.';}
 }
 function frame(now){const dt=Math.min((now-last)/1000||0, .05);last=now;if(ready){accumulator+=dt;while(accumulator>=1/120){simulate();accumulator-=1/120;}sync();render();}requestAnimationFrame(frame);}sync();requestAnimationFrame(frame);
 // Only the dedicated browser test page enables deterministic simulation access.
