@@ -1,6 +1,6 @@
 # Molly och den magiska enhörningen
 
-Ett spelbart svenskt plattformsspel i webbläsaren. Molly rider en vit enhörning med fjädervingar genom Regnbågsängen. En kort bana innehåller 15 stjärnor, raviner, magiska törnen och en regnbågsportal.
+Ett spelbart svenskt plattformsspel i webbläsaren. Molly rider en vit enhörning med fjädervingar genom Regnbågsängen. Första banan är 8 600 spelpixlar lång, drygt dubbelt så lång som originalet, och har sex områden med 38 stjärnor, godis, glass och en hästvän.
 
 ## Spela lokalt
 
@@ -31,6 +31,21 @@ Spelet känner av pekskärm via pekdonets egenskaper (`any-pointer: coarse`, med
 
 I pekläge ersätts pilknapparna med tryck på spelytan och Stanna. Molly går mot den markerade platsen bara medan fingret hålls nere. Hon stannar när fingret släpps. Dra fingret för att ändra destinationen. Hoppa och Magi har större knappar och stödjer flera samtidiga pekningar med oberoende släpp och avbrott. Vid skada, paus, omstart och förlorat fokus rensas destinationen. Vid förlorat fokus pausas också spelet. A/D används inte.
 
+## Det längre äventyret
+
+| Område | Att upptäcka |
+|---|---|
+| Regnbågsängen | Träna små hopp och trolla bort törnen |
+| Godisstigen | Samla inslaget godis och öppna en present med Magi |
+| Glassgläntan | Använd Magi vid glassvagnen för tre hjärtan och full flygkraft. Samla tre morötter och ge dem till hästvännen med Magi |
+| Blomsterhoppen | Hoppa vid de stora blommorna för extra höjd och hitta godsaker på valfria plattformar |
+| Hästarnas picknick | Hoppa över låga, ofarliga ridhinder |
+| Regnbågsfesten | Öppna en sista present och nå regnbågsportalen |
+
+Alla uppdrag och samlarobjekt är valfria. Presenter ger fyra godisbitar vardera, hästvännen ger tre som tack. Varje belöning kan hämtas en gång per spel. De fem ravinerna är bara 120–130 pixlar breda och kan klaras med vanliga korta hopp. Ridhinder stoppar gång men tar inte hjärtan. Trygga återstartspunkter sparas på mark, bort från ravinkanterna och törnena. Samlat godis och färdiga uppdrag behålls efter skada och nollställs när ett nytt spel startas.
+
+Pekstyrningen följer kameran medan fingret hålls nere. Molly stannar när rörelsefingret släpps. Man kan hålla rörelse mot ett ridhinder och sedan trycka Hoppa med ett annat finger.
+
 ## GitHub Pages
 
 Repository: https://github.com/adellestrand/MollyEnhorning
@@ -43,11 +58,11 @@ Publicera från **Settings → Pages → Deploy from a branch → main → /(roo
 npm test
 ```
 
-Elva automatiserade tester kontrollerar pekskärmsdetektering, kollisioner, förbrukad flygkraft och påfyllning, magi, stjärnor, hälsa, förlust, paus och hela banan från start till mål utan att flytta spelaren med testkod.
+Tjugo automatiserade tester kontrollerar pekskärmsdetektering, kollisioner, förbrukad flygkraft och påfyllning, magi, stjärnor, hälsa, förlust, paus och hela banan från start till mål utan att flytta spelaren med testkod.
 
-Med servern igång: öppna **http://localhost:4173/tests/browser.html**. Tjugoen browsertester kontrollerar start, tangentbordshändelser, X, hopp/flygning, tre samtidiga emulerade pekningar, oberoende släpp, avbruten pekning, förlorad pointer capture, fokusförlust, paus, omstart, förlust, stjärnor och fullständigt genomspel. De kontrollerar även rörelse medan fingret hålls nere, stopp vid släpp, korta tryck utan fortsatt rörelse, oberoende släpp med samtidiga hopp/magi, flera fingrar på spelytan, drag, Stanna, kamerans koordinater och stopp vid skada. Layout kontrolleras i 768 × 1024, 834 × 1194, 1024 × 600, 1024 × 768 och 1366 × 1024: pekknappar ligger under canvas, träffytor är minst 44 px, och sidan har inget scrollområde.
+Med servern igång: öppna **http://localhost:4173/tests/browser.html**. Tjugosju browsertester kontrollerar start, tangentbordshändelser, X, hopp/flygning, tre samtidiga emulerade pekningar, oberoende släpp, avbruten pekning, förlorad pointer capture, fokusförlust, paus, omstart, förlust, stjärnor och fullständigt genomspel. De kontrollerar även rörelse medan fingret hålls nere, stopp vid släpp, korta tryck utan fortsatt rörelse, oberoende släpp med samtidiga hopp/magi, flera fingrar på spelytan, drag, Stanna, kamerans koordinater och stopp vid skada. De nya testerna kontrollerar godispresenter, morötter, matning av hästvännen, glasspaus, blomsterhopp, ridhinder, återstart och hela den långa banan. Layout kontrolleras i 768 × 1024, 834 × 1194, 1024 × 600, 1024 × 768 och 1366 × 1024: pekknappar ligger under canvas, träffytor är minst 44 px, och sidan har inget scrollområde.
 
-Verifierat i Codex-webbläsarens Chromium den 8 oktober 2026: 11/11 automatiserade tester och 21/21 browsertester godkända. Ett automatiserat genomspel nådde portalen med tre hjärtan och minst fem stjärnor. Vanliga browserinteraktioner med höger piltangent, mellanslag och X verifierade rörelse, hopp och magi. Samtidig touch är emulerad med PointerEvent; fysisk iPad/Android-surfplatta och Safari har inte testats.
+Verifierat i Codex-webbläsarens Chromium den 8 oktober 2026: 20/20 automatiserade tester och 27/27 browsertester godkända. Genomspel med både tangentbord och emulerad pekstyrning når den nya festen med tre hjärtan. Den långa banan är även verifierad med korta hopp utan flygning och helt utan samlarobjekt eller uppdrag. Vanliga browserinteraktioner med höger piltangent, mellanslag och X verifierade rörelse, hopp och magi. Samtidig touch är emulerad med PointerEvent; fysisk iPad/Android-surfplatta och Safari har inte testats.
 
 ## Teknik och vidareutveckling
 
@@ -56,6 +71,7 @@ Ren JavaScript och Canvas, 120 fysiksteg per sekund, separat rendering och en li
 - `core.js`: fysik, bana och spelregler; går att testa i Node.
 - `control-mode.js`: detektering av pekskärmskontroller; går att testa i Node.
 - `game.js`: bildrendering, animationer, UI och inmatning.
+- `world-art.js`: godis, morötter, presenter, glassvagn, hästvän, blommor och ridhinder.
 - `style.css` och `index.html`: responsiv svensk spelvy.
 - `assets/`: referens, separata originalbilder och mindre WebP-versioner.
 - `ASSETS.md`: bildprompter och spritearkets koordinater.

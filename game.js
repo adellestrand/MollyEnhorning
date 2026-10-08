@@ -2,7 +2,7 @@
 const C=MollyCore, canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
 let game=C.createGame(),last=0,accumulator=0,lastMode='',ready=false;
-let touchMode=false,moveTarget=null,screenPointer=null,blockedTime=0;
+let touchMode=false,moveTarget=null,screenPointer=null,screenX=0;
 const coarsePointer=matchMedia('(any-pointer: coarse)'),hoverNone=matchMedia('(hover: none)');
 function setTouchMode(enabled){
   if(touchMode!==enabled){screenPointer=null;stopWalking();}
@@ -17,11 +17,12 @@ detectControls();coarsePointer.addEventListener('change',detectControls);hoverNo
 document.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.pointerType==='pen')setTouchMode(true);},true);
 const held=new Set(),pointers=new Map(),queued=new Set(),actionKeys={ArrowLeft:'left',ArrowRight:'right',Space:'jump',KeyX:'magic'};
 const input=()=>({left:moveTarget!==null&&moveTarget<game.p.x||held.has('left')||[...pointers.values()].includes('left'),right:moveTarget!==null&&moveTarget>game.p.x||held.has('right')||[...pointers.values()].includes('right'),jump:queued.has('jump')||held.has('jump')||[...pointers.values()].includes('jump'),magic:queued.has('magic')||held.has('magic')||[...pointers.values()].includes('magic')});
-function stopWalking(){moveTarget=null;blockedTime=0;$('stop').disabled=true;}
+function stopWalking(){moveTarget=null;$('stop').disabled=true;}
 function simulate(){
+  if(screenPointer!==null&&moveTarget!==null)updateDestination();
   if(moveTarget!==null&&Math.abs(moveTarget-game.p.x)<=C.SPEED/120)stopWalking();
-  const oldX=game.p.x,health=game.p.health;C.step(game,input(),1/120);queued.clear();
-  if(moveTarget!==null&&game.mode==='playing'){blockedTime=game.p.x===oldX?blockedTime+1/120:0;if(blockedTime>.35||game.p.health!==health)stopWalking();}
+  const health=game.p.health;C.step(game,input(),1/120);queued.clear();
+  if(moveTarget!==null&&game.p.health!==health)stopWalking();
 }
 function clearInput(){held.clear();pointers.clear();queued.clear();screenPointer=null;stopWalking();document.querySelectorAll('[data-action]').forEach(b=>b.classList.remove('active'));game.jumpWas=false;game.magicWas=false;}
 function start(){clearInput();game=C.createGame();game.mode='playing';canvas.focus({preventScroll:true});sync();}
@@ -35,7 +36,8 @@ for(const b of document.querySelectorAll('[data-action]')){
   const release=e=>{const wasActive=pointers.has(e.pointerId),a=b.dataset.action;pointers.delete(e.pointerId);if(![...pointers.values()].includes(a)){b.classList.remove('active');if((e.type==='pointercancel'||e.type==='lostpointercapture'&&wasActive)&&!held.has(a))queued.delete(a);}};
   b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',release);
 }
-function pointDestination(e){const r=canvas.getBoundingClientRect();moveTarget=Math.max(0,Math.min(C.W-game.p.w,(e.clientX-r.left)*1200/r.width+game.camera-game.p.w/2));blockedTime=0;$('stop').disabled=false;}
+function updateDestination(){moveTarget=Math.max(0,Math.min(C.W-game.p.w,screenX+game.camera-game.p.w/2));}
+function pointDestination(e){const r=canvas.getBoundingClientRect();screenX=(e.clientX-r.left)*1200/r.width;updateDestination();$('stop').disabled=false;}
 canvas.addEventListener('pointerdown',e=>{if(!touchMode||game.mode!=='playing'||screenPointer!==null)return;e.preventDefault();screenPointer=e.pointerId;pointDestination(e);if(e.isTrusted)canvas.setPointerCapture(e.pointerId);});
 canvas.addEventListener('pointermove',e=>{if(e.pointerId===screenPointer){e.preventDefault();pointDestination(e);}});
 const cancelScreen=e=>{if(e.pointerId===screenPointer){screenPointer=null;stopWalking();}};
@@ -43,9 +45,9 @@ canvas.addEventListener('pointerup',cancelScreen);canvas.addEventListener('point
 $('stop').addEventListener('click',()=>{screenPointer=null;stopWalking();});
 document.addEventListener('contextmenu',e=>{if(e.target.closest('.game-shell'))e.preventDefault();});
 $('play').addEventListener('click',()=>game.mode==='paused'?pause():start());$('restart').addEventListener('click',start);$('pause').addEventListener('click',pause);
-const sprite=new Image(),background=new Image();
-sprite.src='assets/molly-sprites.webp';background.src='assets/meadow.webp';
-Promise.all([sprite.decode(),background.decode()]).then(()=>{ready=true;sync();}).catch(()=>{ $('dialog-text').textContent='En spelbild kunde inte laddas. Ladda om sidan och försök igen.';$('play').disabled=true; });
+const sprite=new Image(),background=new Image(),pony=new Image(),cart=new Image();
+sprite.src='assets/molly-sprites.webp';background.src='assets/meadow.webp';pony.src='assets/pony-friend.png';cart.src='assets/icecream-cart.png';
+Promise.all([sprite.decode(),background.decode(),pony.decode(),cart.decode()]).then(()=>{ready=true;sync();}).catch(()=>{ $('dialog-text').textContent='En spelbild kunde inte laddas. Ladda om sidan och försök igen.';$('play').disabled=true; });
 function star(x,y,r,color){ctx.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,rr=i%2?r*.45:r;const xx=x+Math.cos(a)*rr,yy=y+Math.sin(a)*rr;i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);}ctx.closePath();ctx.fillStyle=color;ctx.fill();}
 function label(x,y,text){ctx.font='14px Georgia';const w=ctx.measureText(text).width;ctx.fillStyle='#fff9efee';ctx.beginPath();ctx.roundRect(x-w/2-14,y-20,w+28,32,12);ctx.fill();ctx.fillStyle='#685175';ctx.textAlign='center';ctx.fillText(text,x,y);}
 function platform(s){
@@ -56,15 +58,16 @@ function platform(s){
   for(let i=0;i<s.w/7;i++){const x=s.x+i*7,seed=(i*47+s.x)%31;ctx.strokeStyle=['#74964d','#b1c777','#597a47'][i%3];ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,s.y+5);ctx.lineTo(x-3+seed%7,s.y-3-seed%9);ctx.stroke();if(i%9===0){ctx.fillStyle=['#f1d7ee','#fff7cc','#bba2db'][i%3];ctx.beginPath();ctx.arc(x,s.y-5-seed%9,2.8,0,Math.PI*2);ctx.fill();}}
 }
 function thorn(t){ctx.save();ctx.translate(t.x,t.y);ctx.strokeStyle='#68506e';ctx.lineWidth=6;for(let i=0;i<5;i++){const x=8+i*12;ctx.beginPath();ctx.moveTo(x,t.h);ctx.bezierCurveTo(x-20,10,x+25,26,x+5,2);ctx.stroke();ctx.fillStyle='#9775a7';ctx.beginPath();ctx.moveTo(x+2,12);ctx.lineTo(x-11,4);ctx.lineTo(x-2,22);ctx.fill();ctx.beginPath();ctx.moveTo(x,27);ctx.lineTo(x+17,17);ctx.lineTo(x+3,35);ctx.fill();}ctx.restore();}
-function portal(){const x=3670,y=530;ctx.save();ctx.translate(x,y);ctx.shadowBlur=25;ctx.shadowColor='#ffdd9b';const colors=['#e0a0ac','#e9c489','#ece8ab','#afd4af','#9acdda','#b1a2d6'];for(let i=0;i<6;i++){ctx.strokeStyle=colors[i];ctx.lineWidth=8;ctx.beginPath();ctx.ellipse(0,-90,78-i*7,126-i*7,0,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(-78+i*7,-90);ctx.lineTo(-78+i*7,0);ctx.moveTo(78-i*7,-90);ctx.lineTo(78-i*7,0);ctx.stroke();}ctx.shadowBlur=0;ctx.fillStyle='#fff7c3';for(let i=0;i<9;i++)star(Math.sin(i*4)*45,-30-i*18+Math.sin(game.time*2+i)*9,3,'#fff9e6');ctx.restore();label(x,562,'Regnbågsportalen');}
+function portal(){const x=C.PORTAL_X,y=530;ctx.save();ctx.translate(x,y);ctx.shadowBlur=25;ctx.shadowColor='#ffdd9b';const colors=['#e0a0ac','#e9c489','#ece8ab','#afd4af','#9acdda','#b1a2d6'];for(let i=0;i<6;i++){ctx.strokeStyle=colors[i];ctx.lineWidth=8;ctx.beginPath();ctx.ellipse(0,-90,78-i*7,126-i*7,0,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(-78+i*7,-90);ctx.lineTo(-78+i*7,0);ctx.moveTo(78-i*7,-90);ctx.lineTo(78-i*7,0);ctx.stroke();}ctx.shadowBlur=0;ctx.fillStyle='#fff7c3';for(let i=0;i<9;i++)star(Math.sin(i*4)*45,-30-i*18+Math.sin(game.time*2+i)*9,3,'#fff9e6');ctx.restore();label(x,562,'Regnbågsportalen');}
 function render(){
   ctx.clearRect(0,0,1200,650);
-  if(background.complete&&background.naturalWidth){const x=-game.camera*.12;ctx.drawImage(background,x,0,1500,650);ctx.drawImage(background,x+1500,0,1500,650);}else{ctx.fillStyle='#c7e1e8';ctx.fillRect(0,0,1200,650);}
+  if(background.complete&&background.naturalWidth){const x=-game.camera*.12;ctx.drawImage(background,x,0,1500,650);ctx.save();ctx.translate(x+3000,0);ctx.scale(-1,1);ctx.drawImage(background,0,0,1500,650);ctx.restore();}else{ctx.fillStyle='#c7e1e8';ctx.fillRect(0,0,1200,650);}
   const mist=ctx.createLinearGradient(0,360,0,650);mist.addColorStop(0,'#eef5e800');mist.addColorStop(1,'#e2dcec70');ctx.fillStyle=mist;ctx.fillRect(0,300,1200,350);
-  ctx.save();ctx.translate(-game.camera,0);C.surfaces.forEach(platform);
+  ctx.save();ctx.translate(-game.camera,0);C.surfaces.filter(s=>s.x+s.w>game.camera-40&&s.x<game.camera+1240).forEach(platform);
+  MollyArt.draw(ctx,game,C,{pony,cart});
   for(const s of game.stars){if(s.taken)continue;const y=s.y+Math.sin(game.time*2+s.x)*5;ctx.shadowBlur=18;ctx.shadowColor='#fff1ad';star(s.x,y,17,'#ffde79');ctx.shadowBlur=0;ctx.strokeStyle='#fff9db';ctx.lineWidth=2;ctx.stroke();}
   for(const t of game.thorns)if(!t.removed)thorn(t);
-  portal();if(game.camera<400){label(325,565,touchMode?'Håll för att gå · Släpp för att stanna':'← →  Av mot äventyret');label(605,460,touchMode?'Magi · Törnena försvinner':'X  ·  Stjärnmagi');label(860,590,'Håll hopp för att flyga');}
+  if(game.camera>C.PORTAL_X-1400)portal();if(game.camera<400){label(325,565,touchMode?'Håll för att gå · Släpp för att stanna':'← →  Av mot äventyret');label(605,460,touchMode?'Magi · Törnena försvinner':'X  ·  Stjärnmagi');label(860,590,'Litet hopp · Håll för att flyga');}
   if(moveTarget!==null){const x=moveTarget+game.p.w/2;ctx.strokeStyle='#fff4bd';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,525,18,6,0,0,Math.PI*2);ctx.stroke();star(x,501,7,'#fff4bd');}
   for(const s of game.shots){ctx.shadowBlur=20;ctx.shadowColor='#d6a6ff';star(s.x,s.y,18,'#f5dcff');ctx.shadowBlur=0;for(let i=1;i<5;i++){ctx.globalAlpha=1-i/5;star(s.x-Math.sign(s.vx)*i*12,s.y,7-i,'#e5b7ff');}ctx.globalAlpha=1;}
   const p=game.p;
@@ -74,10 +77,11 @@ function render(){
 }
 function sync(){
   if(window.MollyTest){canvas.dataset.x=game.p.x;canvas.dataset.y=game.p.y;canvas.dataset.mode=game.mode;canvas.dataset.fuel=game.p.fuel;canvas.dataset.shots=game.shots.length;}
-  $('health').textContent='♥ '.repeat(game.p.health)+'♡ '.repeat(3-game.p.health);$('health').setAttribute('aria-label',game.p.health+' av 3 hjärtan');$('stars').textContent=game.collected+' / '+game.stars.length;$('fuel').style.width=game.p.fuel/C.FUEL*100+'%';$('progress').style.width=Math.max(0,(game.p.x-140)/3460*100)+'%';$('toast').textContent=game.notice;$('toast').style.opacity=game.noticeTime>0?1:0;
+  $('health').textContent='♥ '.repeat(game.p.health)+'♡ '.repeat(3-game.p.health);$('health').setAttribute('aria-label',game.p.health+' av 3 hjärtan');$('stars').textContent=game.collected+' / '+game.stars.length;$('candies').textContent=game.candyCount;$('candies').setAttribute('aria-label',game.candyCount+' godisbitar');$('fuel').style.width=game.p.fuel/C.FUEL*100+'%';$('progress').style.width=Math.max(0,Math.min(100,(game.p.x-140)/(C.FINISH-140)*100))+'%';$('toast').textContent=game.notice;$('toast').style.opacity=game.noticeTime>0?1:0;
+  $('zone-name').textContent=C.zones[game.zone].name;const hint=C.activityHint(game);$('activity-tip').textContent=hint;$('activity-tip').hidden=!hint;
   $('pause').textContent=game.mode==='paused'?'▷':'Ⅱ';$('pause').setAttribute('aria-label',game.mode==='paused'?'Fortsätt spela':'Pausa spelet');
   if(game.mode===lastMode)return;lastMode=game.mode;const overlay=$('overlay');overlay.hidden=game.mode==='playing';$('instructions').hidden=game.mode!=='intro';
-  if(game.mode==='won'){clearInput();$('eyebrow').textContent='NI HITTADE HEM!';$('dialog-title').innerHTML='Vilken magisk resa!';$('dialog-text').textContent='Molly och enhörningen nådde regnbågsportalen. Ni samlade '+game.collected+' av '+game.stars.length+' stjärnor. Vill ni hitta fler?';$('play').textContent='Spela igen →';$('dialog-note').textContent='Varje äventyr börjar med ett litet hopp.';}
+  if(game.mode==='won'){clearInput();$('eyebrow').textContent='VÄLKOMNA TILL REGNBÅGSFESTEN!';$('dialog-title').innerHTML='Vilken magisk resa!';$('dialog-text').textContent='Ni nådde regnbågsfesten med '+game.collected+' av '+game.stars.length+' stjärnor och '+game.candyCount+' godisbitar!'+(game.activities.some(a=>a.kind==='pony'&&a.done)?' Hästvännen är mätt och glad.':' Hästvännen väntar gärna på ett nytt äventyr.');$('play').textContent='Spela igen →';$('dialog-note').textContent='Alla små uppdrag är valfria. Vill ni hitta fler godsaker?';}
   if(game.mode==='lost'){clearInput();$('eyebrow').textContent='ÄVENTYRET VÄNTAR PÅ ER';$('dialog-title').textContent='Prova en gång till!';$('dialog-text').textContent='Hoppa över ravinerna och använd stjärnmagi på törnena. Ni klarar det!';$('play').textContent='Försök igen →';$('dialog-note').textContent='Tre nya hjärtan och full flygkraft.';}
   if(game.mode==='paused'){$('eyebrow').textContent='EN LITEN VILOPAUS';$('dialog-title').textContent='Äventyret är pausat';$('dialog-text').textContent='Molly och enhörningen väntar här. Fortsätt när du är redo.';$('play').textContent='Fortsätt spela →';$('dialog-note').textContent=touchMode?'Tryck Fortsätt spela när du är redo.':'Tryck Esc eller på pausknappen för att fortsätta.';}
 }

@@ -22,7 +22,7 @@ Användaren har nu uttryckligen beställt en ny utvecklingssession som sätter u
 
 | Handling | Tangentbord | Surfplatta |
 | --- | --- | --- |
-| Röra sig åt vänster/höger | Vänster/höger piltangent | Två riktningsknappar till vänster |
+| Röra sig åt vänster/höger | Vänster/höger piltangent | Håll fingret på spelytan i önskad riktning; släpp för att stanna |
 | Hoppa | Mellanslag | Stor hoppknapp till höger |
 | Flyga kort efter hoppet | Håll mellanslag | Håll hoppknappen |
 | Använda magi | X | Separat magiknapp |
@@ -71,3 +71,11 @@ Pekstyrningen ska stödja flera fingrar samtidigt, så att spelaren kan styra oc
 ## Avgränsning
 
 Ingen multiplayer, butik, konton, annonser eller avancerad backend i första versionen. Målet är ett riktigt, spelbart första spel med den godkända visuella riktningen, inte enbart en skiss eller startsida.
+
+## Utökning av bana 1 den 8 oktober 2026
+
+På användarens begäran är första banan längre, fortsatt relativt lätt och anpassad till en sexåring som gillar hästar, godis och glass. Banan är nu 8 600 spelpixlar med sex områden: Regnbågsängen, Godisstigen, Glassgläntan, Blomsterhoppen, Hästarnas picknick och Regnbågsfesten.
+
+38 stjärnor, godis och tre morötter går att samla. Magi öppnar två godispresenter, ordnar en glasspaus som fyller hjärtan och matar en hästvän efter att tre morötter samlats. Stora blommor förstärker valda hopp. Låga ridhinder stoppar gång utan att skada. Ravinerna är smalare än i originalet och återstartspunkterna ligger på trygg mark. Alla små uppdrag är frivilliga, och det går att nå målet med vanliga korta hopp utan flygning.
+
+Godkänd naturtrogen karaktärsstil behålls. Ny hästvän och glassvagn är separata transparenta spelbilder. Godis, morötter, presenter, blommor och ridhinder ritas direkt i Canvas. Håll/släpp-styrning med samtidiga hopp och magi behålls.
