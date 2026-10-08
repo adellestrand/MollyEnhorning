@@ -2,18 +2,19 @@
 const C=MollyCore, canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
 let game=C.createGame(),last=0,accumulator=0,lastMode='',ready=false;
-const held=new Set(),pointers=new Map(),actionKeys={ArrowLeft:'left',ArrowRight:'right',Space:'jump',KeyX:'magic'};
-const input=()=>({left:held.has('left')||[...pointers.values()].includes('left'),right:held.has('right')||[...pointers.values()].includes('right'),jump:held.has('jump')||[...pointers.values()].includes('jump'),magic:held.has('magic')||[...pointers.values()].includes('magic')});
-function clearInput(){held.clear();pointers.clear();document.querySelectorAll('[data-action]').forEach(b=>b.classList.remove('active'));game.jumpWas=false;game.magicWas=false;}
+const held=new Set(),pointers=new Map(),queued=new Set(),actionKeys={ArrowLeft:'left',ArrowRight:'right',Space:'jump',KeyX:'magic'};
+const input=()=>({left:held.has('left')||[...pointers.values()].includes('left'),right:held.has('right')||[...pointers.values()].includes('right'),jump:queued.has('jump')||held.has('jump')||[...pointers.values()].includes('jump'),magic:queued.has('magic')||held.has('magic')||[...pointers.values()].includes('magic')});
+function simulate(){C.step(game,input(),1/120);queued.clear();}
+function clearInput(){held.clear();pointers.clear();queued.clear();document.querySelectorAll('[data-action]').forEach(b=>b.classList.remove('active'));game.jumpWas=false;game.magicWas=false;}
 function start(){clearInput();game=C.createGame();game.mode='playing';canvas.focus({preventScroll:true});sync();}
 function pause(){if(game.mode==='playing'){game.mode='paused';clearInput();}else if(game.mode==='paused'){game.mode='playing';canvas.focus({preventScroll:true});}sync();}
-document.addEventListener('keydown',e=>{const a=actionKeys[e.code];if(a){e.preventDefault();if(game.mode==='playing')held.add(a);}if(e.code==='Escape'&&!e.repeat)pause();});
+document.addEventListener('keydown',e=>{const a=actionKeys[e.code];if(a){e.preventDefault();if(game.mode==='playing'){held.add(a);if(!e.repeat&&(a==='jump'||a==='magic'))queued.add(a);}}if(e.code==='Escape'&&!e.repeat)pause();});
 document.addEventListener('keyup',e=>{const a=actionKeys[e.code];if(a){e.preventDefault();held.delete(a);}});
 window.addEventListener('blur',()=>{clearInput();if(game.mode==='playing'){game.mode='paused';sync();}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInput();if(game.mode==='playing'){game.mode='paused';sync();}}});
 for(const b of document.querySelectorAll('[data-action]')){
-  b.addEventListener('pointerdown',e=>{e.preventDefault();if(game.mode!=='playing')return;pointers.set(e.pointerId,b.dataset.action);b.classList.add('active');if(e.isTrusted)b.setPointerCapture(e.pointerId);});
-  const release=e=>{pointers.delete(e.pointerId);if(![...pointers.values()].includes(b.dataset.action))b.classList.remove('active');};
+  b.addEventListener('pointerdown',e=>{e.preventDefault();if(game.mode!=='playing')return;const a=b.dataset.action;pointers.set(e.pointerId,a);if(a==='jump'||a==='magic')queued.add(a);b.classList.add('active');if(e.isTrusted)b.setPointerCapture(e.pointerId);});
+  const release=e=>{const wasActive=pointers.has(e.pointerId),a=b.dataset.action;pointers.delete(e.pointerId);if(![...pointers.values()].includes(a)){b.classList.remove('active');if((e.type==='pointercancel'||e.type==='lostpointercapture'&&wasActive)&&!held.has(a))queued.delete(a);}};
   b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',release);
 }
 document.addEventListener('contextmenu',e=>{if(e.target.closest('.game-shell'))e.preventDefault();});
@@ -55,6 +56,6 @@ function sync(){
   if(game.mode==='lost'){clearInput();$('eyebrow').textContent='ÄVENTYRET VÄNTAR PÅ ER';$('dialog-title').textContent='Prova en gång till!';$('dialog-text').textContent='Hoppa över ravinerna och använd stjärnmagi på törnena. Ni klarar det!';$('play').textContent='Försök igen →';$('dialog-note').textContent='Tre nya hjärtan och full flygkraft.';}
   if(game.mode==='paused'){$('eyebrow').textContent='EN LITEN VILOPAUS';$('dialog-title').textContent='Äventyret är pausat';$('dialog-text').textContent='Molly och enhörningen väntar här. Fortsätt när du är redo.';$('play').textContent='Fortsätt spela →';$('dialog-note').textContent='Tryck Esc eller på pausknappen för att fortsätta.';}
 }
-function frame(now){const dt=Math.min((now-last)/1000||0, .05);last=now;if(ready){accumulator+=dt;while(accumulator>=1/120){C.step(game,input(),1/120);accumulator-=1/120;}sync();render();}requestAnimationFrame(frame);}sync();requestAnimationFrame(frame);
+function frame(now){const dt=Math.min((now-last)/1000||0, .05);last=now;if(ready){accumulator+=dt;while(accumulator>=1/120){simulate();accumulator-=1/120;}sync();render();}requestAnimationFrame(frame);}sync();requestAnimationFrame(frame);
 // Only the dedicated browser test page enables deterministic simulation access.
-if(new URLSearchParams(location.search).has('test'))window.MollyTest={get game(){return game;},input,start,pause,clearInput,step(n=1){for(let i=0;i<n;i++)C.step(game,input(),1/120);sync();render();},get ready(){return ready;}};
+if(new URLSearchParams(location.search).has('test'))window.MollyTest={get game(){return game;},input,start,pause,clearInput,step(n=1){for(let i=0;i<n;i++)simulate();sync();render();},get ready(){return ready;}};

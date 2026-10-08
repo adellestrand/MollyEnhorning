@@ -42,9 +42,9 @@ npm test
 
 Åtta automatiserade simulationstester kontrollerar kollisioner, förbrukad flygkraft och påfyllning, magi, stjärnor, hälsa, förlust, paus och hela banan från start till mål utan att flytta spelaren med testkod.
 
-Med servern igång: öppna **http://localhost:4173/tests/browser.html**. Tio browsertester kontrollerar start, tangentbordshändelser, X, hopp/flygning, tre samtidiga emulerade pekningar, oberoende släpp, avbruten pekning, förlorad pointer capture, fokusförlust, paus, omstart, förlust, stjärnor och fullständigt genomspel. Liggande layout kontrolleras i en 1024 × 768-iframe: pekknappar ligger under canvas, träffytor är minst 44 px, och sidan har inget scrollområde.
+Med servern igång: öppna **http://localhost:4173/tests/browser.html**. Elva browsertester kontrollerar start, tangentbordshändelser, X, hopp/flygning, tre samtidiga emulerade pekningar, oberoende släpp, avbruten pekning, förlorad pointer capture, fokusförlust, paus, omstart, förlust, stjärnor och fullständigt genomspel. Liggande layout kontrolleras i en 1024 × 768-iframe: pekknappar ligger under canvas, träffytor är minst 44 px, och sidan har inget scrollområde.
 
-Verifierat i Codex-webbläsarens Chromium den 8 oktober 2026: 8/8 simulationstester och 10/10 browsertester godkända. Ett automatiserat genomspel nådde portalen med tre hjärtan och 12/15 stjärnor. Vanliga browserinteraktioner med höger piltangent, mellanslag och X verifierade rörelse, hopp och magi. Samtidig touch är emulerad med PointerEvent; fysisk iPad/Android-surfplatta och Safari har inte testats.
+Verifierat i Codex-webbläsarens Chromium den 8 oktober 2026: 8/8 simulationstester och 11/11 browsertester godkända. Ett automatiserat genomspel nådde portalen med tre hjärtan och 12/15 stjärnor. Vanliga browserinteraktioner med höger piltangent, mellanslag och X verifierade rörelse, hopp och magi. Samtidig touch är emulerad med PointerEvent; fysisk iPad/Android-surfplatta och Safari har inte testats.
 
 ## Teknik och vidareutveckling
 
@@ -72,3 +72,4 @@ git remote set-url origin https://adellestrand@github.com/adellestrand/MollyEnho
 Git Credential Manager lagrar själva inloggningen i Windows Credential Manager. Kontoval är skilt från commit-namn och e-post. Spara aldrig lösenord eller token i projektets filer.
 
 Den här mappen skapades av Codex sandboxkonto. Ett undantag för exakt denna mapp i Git `safe.directory` har därför lagts till efter användarens uttryckliga godkännande. Det gäller bara denna sökväg och ändrar inga jobbidentiteter.
+
