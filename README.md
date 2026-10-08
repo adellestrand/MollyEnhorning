@@ -59,14 +59,16 @@ Ren JavaScript och Canvas, 120 fysiksteg per sekund, separat rendering och en li
 
 ## Privat Git-identitet för denna mapp
 
-Den lokala `.git/config` väljer `adellestrand`, GitHubs noreply-adress och remote med explicit kontonamn. `credential.useHttpPath=true` håller repositoryts autentiseringskontext åtskild. Jobbets globala namn och e-post ändras inte.
+Den lokala `.git/config` väljer `adellestrand`, GitHubs noreply-adress och remote med explicit kontonamn. Kontonamnet i remote-adressen väljer rätt sparad inloggning i Git Credential Manager. `credential.useHttpPath=false` låter GCM hitta den kontoinloggningen; det explicita användarnamnet skiljer kontona åt. Jobbets globala namn, e-post och inloggning ändras inte.
 
 ```powershell
 git config --local user.name adellestrand
 git config --local user.email 13117247+adellestrand@users.noreply.github.com
 git config --local credential.https://github.com.username adellestrand
-git config --local credential.useHttpPath true
+git config --local credential.useHttpPath false
 git remote set-url origin https://adellestrand@github.com/adellestrand/MollyEnhorning.git
 ```
 
 Git Credential Manager lagrar själva inloggningen i Windows Credential Manager. Kontoval är skilt från commit-namn och e-post. Spara aldrig lösenord eller token i projektets filer.
+
+Den här mappen skapades av Codex sandboxkonto. Ett undantag för exakt denna mapp i Git `safe.directory` har därför lagts till efter användarens uttryckliga godkännande. Det gäller bara denna sökväg och ändrar inga jobbidentiteter.
