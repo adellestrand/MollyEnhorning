@@ -9,8 +9,8 @@ function setTouchMode(enabled){
   touchMode=enabled;document.body.dataset.controls=enabled?'touch':'keyboard';
   $('touch-instructions').hidden=!enabled;$('keyboard-instructions').hidden=enabled;
   $('screen-controls').hidden=!enabled;
-  canvas.setAttribute('aria-label',enabled?'Spelyta. Tryck dit ni vill gå. Använd knapparna Hoppa och Magi.':'Spelyta. Piltangenter styr, mellanslag hoppar och flyger, X använder magi.');
-  $('tip').innerHTML=enabled?'Tryck dit ni vill gå<span>Hoppa och använd magi med knapparna</span>':'Följ stjärnorna till regnbågsportalen<span>Håll hopp för en liten flygtur</span>';
+  canvas.setAttribute('aria-label',enabled?'Spelyta. Håll fingret på spelytan där ni vill gå. Släpp för att stanna. Använd knapparna Hoppa och Magi.':'Spelyta. Piltangenter styr, mellanslag hoppar och flyger, X använder magi.');
+  $('tip').innerHTML=enabled?'Håll på spelytan för att gå<span>Släpp för att stanna · Hoppa och Magi med knapparna</span>':'Följ stjärnorna till regnbågsportalen<span>Håll hopp för en liten flygtur</span>';
 }
 function detectControls(){setTouchMode(MollyControls.usesTouchControls({coarsePointer:coarsePointer.matches,touchPoints:navigator.maxTouchPoints,hoverNone:hoverNone.matches}));}
 detectControls();coarsePointer.addEventListener('change',detectControls);hoverNone.addEventListener('change',detectControls);
@@ -38,9 +38,8 @@ for(const b of document.querySelectorAll('[data-action]')){
 function pointDestination(e){const r=canvas.getBoundingClientRect();moveTarget=Math.max(0,Math.min(C.W-game.p.w,(e.clientX-r.left)*1200/r.width+game.camera-game.p.w/2));blockedTime=0;$('stop').disabled=false;}
 canvas.addEventListener('pointerdown',e=>{if(!touchMode||game.mode!=='playing'||screenPointer!==null)return;e.preventDefault();screenPointer=e.pointerId;pointDestination(e);if(e.isTrusted)canvas.setPointerCapture(e.pointerId);});
 canvas.addEventListener('pointermove',e=>{if(e.pointerId===screenPointer){e.preventDefault();pointDestination(e);}});
-canvas.addEventListener('pointerup',e=>{if(e.pointerId===screenPointer)screenPointer=null;});
 const cancelScreen=e=>{if(e.pointerId===screenPointer){screenPointer=null;stopWalking();}};
-canvas.addEventListener('pointercancel',cancelScreen);canvas.addEventListener('lostpointercapture',cancelScreen);
+canvas.addEventListener('pointerup',cancelScreen);canvas.addEventListener('pointercancel',cancelScreen);canvas.addEventListener('lostpointercapture',cancelScreen);
 $('stop').addEventListener('click',()=>{screenPointer=null;stopWalking();});
 document.addEventListener('contextmenu',e=>{if(e.target.closest('.game-shell'))e.preventDefault();});
 $('play').addEventListener('click',()=>game.mode==='paused'?pause():start());$('restart').addEventListener('click',start);$('pause').addEventListener('click',pause);
@@ -65,7 +64,7 @@ function render(){
   ctx.save();ctx.translate(-game.camera,0);C.surfaces.forEach(platform);
   for(const s of game.stars){if(s.taken)continue;const y=s.y+Math.sin(game.time*2+s.x)*5;ctx.shadowBlur=18;ctx.shadowColor='#fff1ad';star(s.x,y,17,'#ffde79');ctx.shadowBlur=0;ctx.strokeStyle='#fff9db';ctx.lineWidth=2;ctx.stroke();}
   for(const t of game.thorns)if(!t.removed)thorn(t);
-  portal();if(game.camera<400){label(325,565,touchMode?'Tryck dit ni vill gå':'← →  Av mot äventyret');label(605,460,touchMode?'Magi · Törnena försvinner':'X  ·  Stjärnmagi');label(860,590,'Håll hopp för att flyga');}
+  portal();if(game.camera<400){label(325,565,touchMode?'Håll för att gå · Släpp för att stanna':'← →  Av mot äventyret');label(605,460,touchMode?'Magi · Törnena försvinner':'X  ·  Stjärnmagi');label(860,590,'Håll hopp för att flyga');}
   if(moveTarget!==null){const x=moveTarget+game.p.w/2;ctx.strokeStyle='#fff4bd';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,525,18,6,0,0,Math.PI*2);ctx.stroke();star(x,501,7,'#fff4bd');}
   for(const s of game.shots){ctx.shadowBlur=20;ctx.shadowColor='#d6a6ff';star(s.x,s.y,18,'#f5dcff');ctx.shadowBlur=0;for(let i=1;i<5;i++){ctx.globalAlpha=1-i/5;star(s.x-Math.sign(s.vx)*i*12,s.y,7-i,'#e5b7ff');}ctx.globalAlpha=1;}
   const p=game.p;
