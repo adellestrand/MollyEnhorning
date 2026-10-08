@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="sv">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#342746"><title>Molly och den magiska enhörningen</title><link rel="stylesheet" href="style.css"><script defer src="core.js"></script><script defer src="game.js"></script></head>
+<body>
+<main class="game-shell">
+  <header><div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><div><h1>Molly <span>och den magiska enhörningen</span></h1><p>ETT LITET SAGOLIKT ÄVENTYR</p></div></div><div class="chapter"><span>BANA 01</span>Regnbågsängen</div></header>
+  <section class="stage" aria-label="Regnbågsängen">
+    <canvas id="game" width="1200" height="650" tabindex="0" aria-label="Spelyta. Piltangenter styr, mellanslag hoppar och flyger, X använder magi."></canvas>
+    <div class="hud"><div class="hud-card"><span class="hud-label">HÄLSA</span><span id="health" aria-label="3 av 3 hjärtan">♥ ♥ ♥</span></div><div class="hud-card stars"><span class="star-icon">★</span><span id="stars">0 / 15</span></div><div class="hud-card fuel"><span class="hud-label">FLYGKRAFT</span><div class="meter"><div id="fuel"></div></div></div><button id="pause" class="mini" aria-label="Pausa spelet">Ⅱ</button><button id="restart" class="mini" aria-label="Börja om">↻</button></div>
+    <div class="progress"><div id="progress"></div></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="overlay" class="overlay"><div class="intro-card"><p class="eyebrow" id="eyebrow">VÄLKOMMEN TILL REGNBÅGSÄNGEN</p><h2 id="dialog-title">En liten ryttare.<br>Ett magiskt äventyr.</h2><p id="dialog-text">Hjälp Molly och hennes enhörning till regnbågsportalen. Samla stjärnor och trolla bort de lila törnena på vägen!</p><div id="instructions"><div><kbd>←</kbd><kbd>→</kbd><span>Rör er</span></div><div><kbd>mellanslag</kbd><span>Hoppa · håll för att flyga</span></div><div><kbd>X</kbd><span>Trolla bort törnen</span></div></div><button id="play" class="primary">Börja äventyret <span>→</span></button><p class="small" id="dialog-note">Spela även med knapparna nedanför. Flygkraften fylls på när ni landar.</p></div></div>
+  </section>
+  <nav class="controls" aria-label="Spelkontroller"><div class="directions"><button data-action="left" aria-label="Gå åt vänster">←</button><button data-action="right" aria-label="Gå åt höger">→</button></div><p class="control-tip" id="tip">Följ stjärnorna till regnbågsportalen<span>Håll hopp för en liten flygtur</span></p><div class="abilities"><button data-action="magic" class="magic" aria-label="Använd magi"><span>✧</span> Magi <kbd>X</kbd></button><button data-action="jump" class="jump" aria-label="Hoppa och håll för att flyga"><span>↟</span> Hoppa <kbd>␣</kbd></button></div></nav>
+  <p class="rotate">Tips: vänd surfplattan på sidan för en större spelyta.</p>
+</main>
+<noscript>Aktivera JavaScript för att spela.</noscript>
+</body></html>
